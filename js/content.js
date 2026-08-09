@@ -1,124 +1,47 @@
-import { round, score } from './score.js';
+import { error, log } from './util.js';
 
 /**
- * Path to directory containing `_list.json` and all levels
+ * @typedef {Object} LocalForage
+ * @property {function} getItem
+ * @property {function} setItem
  */
-const dir = '/data';
 
-export async function fetchList() {
-    const listResult = await fetch(`${dir}/_list.json`);
-    try {
-        const list = await listResult.json();
-        return await Promise.all(
-            list.map(async (path, rank) => {
-                const levelResult = await fetch(`${dir}/${path}.json`);
-                try {
-                    const level = await levelResult.json();
-                    return [
-                        {
-                            ...level,
-                            path,
-                            records: level.records.sort(
-                                (a, b) => b.percent - a.percent,
-                            ),
-                        },
-                        null,
-                    ];
-                } catch {
-                    console.error(`Failed to load level #${rank + 1} ${path}.`);
-                    return [null, path];
-                }
-            }),
-        );
-    } catch {
-        console.error(`Failed to load list.`);
-        return null;
+async function fetchLocal(path) {
+    // Fixed: Added '/class-demon-list' here so GitHub Pages can locate your data folder
+    const res = await fetch(`/class-demon-list/data/${path}.json`);
+    if (res.status === 404) {
+        throw new Error(`Data file not found: /data/${path}.json`);
     }
+    if (!res.ok) {
+        throw new Error(`Failed to fetch data: ${res.statusText}`);
+    }
+    return await res.json();
 }
 
-export async function fetchEditors() {
+/**
+ * @param {string} path data path
+ * @param {LocalForage} storage local storage fallback
+ * @returns any JSON data
+ */
+export async function fetchContent(path, storage) {
     try {
-        const editorsResults = await fetch(`${dir}/_editors.json`);
-        const editors = await editorsResults.json();
-        return editors;
-    } catch {
-        return null;
-    }
-}
-
-export async function fetchLeaderboard() {
-    const list = await fetchList();
-
-    const scoreMap = {};
-    const errs = [];
-    list.forEach(([level, err], rank) => {
-        if (err) {
-            errs.push(err);
-            return;
+        const data = await fetchLocal(path);
+        try {
+            await storage.setItem(path, data);
+        } catch (e) {
+            error(`Failed to cache data: ${e}`);
         }
-
-        // Verification
-        const verifier = Object.keys(scoreMap).find(
-            (u) => u.toLowerCase() === level.verifier.toLowerCase(),
-        ) || level.verifier;
-        scoreMap[verifier] ??= {
-            verified: [],
-            completed: [],
-            progressed: [],
-        };
-        const { verified } = scoreMap[verifier];
-        verified.push({
-            rank: rank + 1,
-            level: level.name,
-            score: score(rank + 1, 100, level.percentToQualify),
-            link: level.verification,
-        });
-
-        // Records
-        level.records.forEach((record) => {
-            const user = Object.keys(scoreMap).find(
-                (u) => u.toLowerCase() === record.user.toLowerCase(),
-            ) || record.user;
-            scoreMap[user] ??= {
-                verified: [],
-                completed: [],
-                progressed: [],
-            };
-            const { completed, progressed } = scoreMap[user];
-            if (record.percent === 100) {
-                completed.push({
-                    rank: rank + 1,
-                    level: level.name,
-                    score: score(rank + 1, 100, level.percentToQualify),
-                    link: record.link,
-                });
-                return;
+        return data;
+    } catch (e) {
+        log(`Failed to fetch live data (${e}), trying cache...`);
+        try {
+            const cached = await storage.getItem(path);
+            if (cached) {
+                return cached;
             }
-
-            progressed.push({
-                rank: rank + 1,
-                level: level.name,
-                percent: record.percent,
-                score: score(rank + 1, record.percent, level.percentToQualify),
-                link: record.link,
-            });
-        });
-    });
-
-    // Wrap in extra Object containing the user and total score
-    const res = Object.entries(scoreMap).map(([user, scores]) => {
-        const { verified, completed, progressed } = scores;
-        const total = [verified, completed, progressed]
-            .flat()
-            .reduce((prev, cur) => prev + cur.score, 0);
-
-        return {
-            user,
-            total: round(total),
-            ...scores,
-        };
-    });
-
-    // Sort by total score
-    return [res.sort((a, b) => b.total - a.total), errs];
+        } catch (cacheError) {
+            error(`Failed to load cached data: ${cacheError}`);
+        }
+        throw e;
+    }
 }
