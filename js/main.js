@@ -1,8 +1,8 @@
 import routes from './routes.js';
 
-// Added relative paths (.) here so GitHub Pages can locate your data folder without a 404 error
-const listResponse = await fetch('./data/_list.json');
-const editorsResponse = await fetch('./data/_editors.json');
+// Fixed subfolder paths specifically configured for GitHub Pages hosting
+const listResponse = await fetch('/class-demon-list/data/_list.json');
+const editorsResponse = await fetch('/class-demon-list/data/_editors.json');
 
 export const config = await listResponse.json();
 export const editors = await editorsResponse.json();
