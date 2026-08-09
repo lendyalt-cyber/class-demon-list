@@ -1,8 +1,8 @@
 import routes from './routes.js';
 
-// Fixed subfolder paths specifically configured for GitHub Pages hosting
-const listResponse = await fetch('/class-demon-list/data/_list.json');
-const editorsResponse = await fetch('/class-demon-list/data/_editors.json');
+// Self-resolving relative paths to keep GitHub Pages happy
+const listResponse = await fetch('./data/_list.json');
+const editorsResponse = await fetch('./data/_editors.json');
 
 export const config = await listResponse.json();
 export const editors = await editorsResponse.json();
