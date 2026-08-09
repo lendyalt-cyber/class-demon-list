@@ -1,18 +1,18 @@
-{
-    "id": 57436521,
-    "name": "Nine Circles",
-    "author": "Zobros",
-    "creators": ["Zobros"],
-    "verifier": "Verifier",
-    "verification": "https://www.youtube.com/watch?v=ISTl28wKSXc",
-    "percentToQualify": 100,
-    "password": "Not Copyable",
-    "records": [
-        {
-            "user": "Shielder1",
-            "link": "",
-            "percent": 100,
-            "hz": 144
-        }
-    ]
+{ 
+    "id": 57436521, 
+    "name": "Nine Circles", 
+    "author": "Zobros", 
+    "creators": ["Zobros"], 
+    "verifier": "Verifier", 
+    "verification": "https://www.youtube.com/watch?v=ISTl28wKSXc", 
+    "percentToQualify": 100, 
+    "password": "Not Copyable", 
+    "records": [ 
+        { 
+            "user": "Shielder1", 
+            "link": "https://www.youtube.com", 
+            "percent": 100, 
+            "hz": 144 
+        } 
+    ] 
 }
